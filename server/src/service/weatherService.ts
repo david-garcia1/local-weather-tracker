@@ -93,55 +93,50 @@ class WeatherService {
   const date = new Date(unixTime * 1000); // Convert seconds to milliseconds
   return date.toLocaleString(); // Convert to a readable format
   }
+
+  private celsiusToFahrenheit(celsius: number): number {
+    return Math.round((celsius * 9/5) + 32);
+  }
+
   // Method to parse the current weather data from the API response
   private parseCurrentWeather(response: any): Weather {
     const city = response.name;
-    const date = this.convertUnixToDate(response.dt); // Convert Unix timestamp to readable date
+    const date = this.convertUnixToDate(response.dt);
     const icon = response.weather[0].icon;
     const description = response.weather[0].description;
-    const temp = response.main.temp;
+    const temp = this.celsiusToFahrenheit(response.main.temp); // Convert to Fahrenheit
     const windSpeed = response.wind.speed;
     const humidity = response.main.humidity;
-
-  // Return a new Weather instance with parsed data
-  console.log({response})
-  return new Weather(city, date, icon, description, temp, windSpeed, humidity);
+  
+    return new Weather(city, date, icon, description, temp, windSpeed, humidity);
   }
 
   // TODO: Complete buildForecastArray method
 
   // Method to build an array of Weather instances representing the forecast data
   private filterForecastToDaily(forecastData: any[], cityName: string): Weather[] {
-    if (!Array.isArray(forecastData)) {
-      console.error("Expected forecastData to be an array, but got:", forecastData);
-      return []; // Return an empty array if the input is not valid
-    }
     const dailyWeatherMap: { [key: string]: Weather } = {};
     const dailyForecastArray: Weather[] = [];
   
     for (const dataPoint of forecastData) {
       const dateString = new Date(dataPoint.dt * 1000).toISOString().split('T')[0];
-  
-      // Only add the first occurrence of weather data for each day
       if (!dailyWeatherMap[dateString]) {
         const date = this.convertUnixToDate(dataPoint.dt);
         const icon = dataPoint.weather[0].icon;
         const description = dataPoint.weather[0].description;
-        const temp = dataPoint.main.temp;
+        const temp = this.celsiusToFahrenheit(dataPoint.main.temp); // Convert to Fahrenheit
         const windSpeed = dataPoint.wind.speed;
         const humidity = dataPoint.main.humidity;
   
         dailyWeatherMap[dateString] = new Weather(cityName, date, icon, description, temp, windSpeed, humidity);
-        dailyForecastArray.push(dailyWeatherMap[dateString]); // Add to the array
+        dailyForecastArray.push(dailyWeatherMap[dateString]);
   
-        // Stop if we have collected 5 days of forecast
         if (dailyForecastArray.length >= 5) {
-          return dailyForecastArray; // Exit the forEach loop early
+          return dailyForecastArray;
         }
       }
-    };
-  
-    return dailyForecastArray; // Return the final array with up to 5 days
+    }
+    return dailyForecastArray;
   }
   // TODO: Complete getWeatherForCity method
   async getWeatherForCity(city: string): Promise<Weather[]> {
